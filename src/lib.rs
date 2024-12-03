@@ -1,5 +1,6 @@
 #![allow(unused)]
 #![feature(binary_heap_drain_sorted)]
+#![feature(iter_map_windows)]
 #![feature(int_roundings)]
 #![feature(iterator_try_collect)]
 

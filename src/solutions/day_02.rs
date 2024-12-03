@@ -1,20 +1,81 @@
 use crate::Solver;
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{self, Context, Result};
+use itertools::Itertools;
 
 pub struct Day;
 
 impl Solver for Day {
-    fn part_1(&self, input: &str) ->  Result<String>  {
-        todo!()
+    fn part_1(&self, input: &str) -> Result<String> {
+        Ok(solve_1(input)?.to_string())
     }
 
-    fn part_2(&self, input: &str) ->  Result<String>  {
+    fn part_2(&self, input: &str) -> Result<String> {
         todo!()
     }
+}
+
+fn parse_str_of_i32(input: &str) -> Result<Vec<i32>> {
+    let collect = input
+        .split(" ")
+        .map(|s: &str| {
+            s.parse::<i32>()
+                .wrap_err_with(|| format!("failed to parse {} to i32", s))
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    Ok(collect)
+}
+
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+enum Safety {
+    SafePos,
+    SafeNeg,
+    Unsafe,
+}
+
+impl From<i32> for Safety {
+    fn from(value: i32) -> Self {
+        match value {
+            -3..=-1 => Self::SafeNeg,
+            0 => Self::Unsafe,
+            1..=3 => Self::SafePos,
+            _ => Self::Unsafe,
+        }
+    }
+}
+
+fn solve_1(input: &str) -> Result<usize> {
+    let result = input
+        .lines()
+        .map(parse_str_of_i32)
+        .collect::<Result<Vec<Vec<_>>>>()?
+        .into_iter()
+        .map(|v| {
+            v.into_iter()
+                .map_windows(|&[a, b]| Safety::from(a - b))
+                .all_equal()
+        })
+        .filter(|x| *x)
+        .count();
+
+    Ok(result)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    const INPUT: &str = "";
+    use assert_ok::assert_ok;
+    const INPUT: &str = "7 6 4 2 1
+1 2 7 8 9
+9 7 6 2 1
+1 3 2 4 5
+8 6 4 4 1
+1 3 6 7 9";
+    const SOLUTION_1: usize = 2;
+
+    #[test]
+    fn test_1() {
+        let r = assert_ok!(solve_1(INPUT));
+        assert_eq!(SOLUTION_1, r);
+    }
 }
