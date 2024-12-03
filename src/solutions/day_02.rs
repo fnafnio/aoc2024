@@ -44,14 +44,16 @@ impl From<i32> for Safety {
     }
 }
 
+fn all_safe<'a>(it: impl IntoIterator<Item = &'a i32>) -> bool {
+    it.into_iter()
+        .map_windows(|&[a, b]| Safety::from(a - b))
+        .all_equal()
+}
+
 fn solve_1(input: &str) -> Result<usize> {
     let result = parse_inputs(input)?
-        .into_iter()
-        .map(|v| {
-            v.into_iter()
-                .map_windows(|&[a, b]| Safety::from(a - b))
-                .all_equal()
-        })
+        .iter()
+        .map(|v| all_safe((v)))
         .filter(|x| *x)
         .count();
 
@@ -59,21 +61,11 @@ fn solve_1(input: &str) -> Result<usize> {
 }
 
 fn solve_2(input: &str) -> Result<usize> {
-    let result = parse_inputs(input)?
-        .into_iter()
-        .map(|v| {
-            let safeties = v
-                .into_iter()
-                .map_windows(|&[a, b]| Safety::from(a - b))
-                .collect_vec();
+    let input = parse_inputs(input)?;
 
-            safeties.iter().all_equal()
-                || safeties
-                    .iter()
-                    .combinations(5)
-                    .map(|v| v.iter().all_equal())
-                    .any(|b| b)
-        })
+    let result = input
+        .into_iter()
+        .map(|v| all_safe(v.iter()) || v.iter().combinations(v.len() - 1).map(all_safe).any(|b| b))
         .filter(|x| *x)
         .count();
     Ok(result)
