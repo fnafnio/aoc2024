@@ -10,7 +10,7 @@ impl Solver for Day {
     }
 
     fn part_2(&self, input: &str) -> Result<String> {
-        todo!()
+        Ok(solve_2(input)?.to_string())
     }
 }
 
@@ -45,10 +45,7 @@ impl From<i32> for Safety {
 }
 
 fn solve_1(input: &str) -> Result<usize> {
-    let result = input
-        .lines()
-        .map(parse_str_of_i32)
-        .collect::<Result<Vec<Vec<_>>>>()?
+    let result = parse_inputs(input)?
         .into_iter()
         .map(|v| {
             v.into_iter()
@@ -59,6 +56,34 @@ fn solve_1(input: &str) -> Result<usize> {
         .count();
 
     Ok(result)
+}
+
+fn solve_2(input: &str) -> Result<usize> {
+    let result = parse_inputs(input)?
+        .into_iter()
+        .map(|v| {
+            let safeties = v
+                .into_iter()
+                .map_windows(|&[a, b]| Safety::from(a - b))
+                .collect_vec();
+
+            safeties.iter().all_equal()
+                || safeties
+                    .iter()
+                    .combinations(5)
+                    .map(|v| v.iter().all_equal())
+                    .any(|b| b)
+        })
+        .filter(|x| *x)
+        .count();
+    Ok(result)
+}
+
+fn parse_inputs(input: &str) -> Result<Vec<Vec<i32>>> {
+    input
+        .lines()
+        .map(parse_str_of_i32)
+        .collect::<Result<Vec<Vec<_>>>>()
 }
 
 #[cfg(test)]
@@ -72,10 +97,16 @@ mod tests {
 8 6 4 4 1
 1 3 6 7 9";
     const SOLUTION_1: usize = 2;
+    const SOLUTION_2: usize = 4;
 
     #[test]
     fn test_1() {
         let r = assert_ok!(solve_1(INPUT));
         assert_eq!(SOLUTION_1, r);
+    }
+    #[test]
+    fn test_2() {
+        let r = assert_ok!(solve_2(INPUT));
+        assert_eq!(SOLUTION_2, r);
     }
 }
