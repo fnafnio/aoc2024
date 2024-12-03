@@ -44,16 +44,20 @@ impl From<i32> for Safety {
     }
 }
 
-fn all_safe<'a>(it: impl IntoIterator<Item = &'a i32>) -> bool {
+fn everything_safe<'a>(it: impl IntoIterator<Item = &'a i32>) -> bool {
     it.into_iter()
         .map_windows(|&[a, b]| Safety::from(a - b))
-        .all_equal()
+        .fold((None, true), |(kind, safe), x| match kind {
+            None => (Some(x), x != Safety::Unsafe),
+            Some(k) => (Some(k), safe && x == k),
+        })
+        .1
 }
 
 fn solve_1(input: &str) -> Result<usize> {
     let result = parse_inputs(input)?
         .iter()
-        .map(|v| all_safe((v)))
+        .map(|v| everything_safe((v)))
         .filter(|x| *x)
         .count();
 
@@ -65,7 +69,17 @@ fn solve_2(input: &str) -> Result<usize> {
 
     let result = input
         .into_iter()
-        .map(|v| all_safe(v.iter()) || v.iter().combinations(v.len() - 1).map(all_safe).any(|b| b))
+        .map(|v| {
+            let is_safe = everything_safe(v.iter());
+            is_safe
+                || v.iter()
+                    .combinations(v.len() - 1)
+                    .map(|comb| {
+                        let x = everything_safe(comb);
+                        x
+                    })
+                    .any(|b| b)
+        })
         .filter(|x| *x)
         .count();
     Ok(result)
