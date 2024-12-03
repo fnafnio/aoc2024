@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use aoc2023::{run_solver, Day, Part};
+use aoc2024::{run_solver, Day, Part};
 use clap::Parser;
 
 #[derive(Parser, Debug)]

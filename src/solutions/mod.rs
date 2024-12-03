@@ -1,14 +1,14 @@
 // there is probably a less repititive way
 
-mod day_1;
-mod day_2;
-mod day_3;
-mod day_4;
-mod day_5;
-mod day_6;
-mod day_7;
-mod day_8;
-mod day_9;
+mod day_01;
+mod day_02;
+mod day_03;
+mod day_04;
+mod day_05;
+mod day_06;
+mod day_07;
+mod day_08;
+mod day_09;
 mod day_10;
 mod day_11;
 mod day_12;
@@ -26,15 +26,15 @@ mod day_23;
 mod day_24;
 mod day_25;
 
-pub use day_1::Day as Day1;
-pub use day_2::Day as Day2;
-pub use day_3::Day as Day3;
-pub use day_4::Day as Day4;
-pub use day_5::Day as Day5;
-pub use day_6::Day as Day6;
-pub use day_7::Day as Day7;
-pub use day_8::Day as Day8;
-pub use day_9::Day as Day9;
+pub use day_01::Day as Day01;
+pub use day_02::Day as Day02;
+pub use day_03::Day as Day03;
+pub use day_04::Day as Day04;
+pub use day_05::Day as Day05;
+pub use day_06::Day as Day06;
+pub use day_07::Day as Day07;
+pub use day_08::Day as Day08;
+pub use day_09::Day as Day09;
 pub use day_10::Day as Day10;
 pub use day_11::Day as Day11;
 pub use day_12::Day as Day12;
