@@ -1,6 +1,7 @@
 use crate::Solver;
 use color_eyre::eyre::{eyre, Result};
-
+use itertools::Itertools;
+use regex::RegexBuilder;
 pub struct Day;
 
 impl Solver for Day {
@@ -14,7 +15,18 @@ impl Solver for Day {
 }
 
 fn solve_1(input: &str) -> Result<usize> {
-    Err(eyre!("not yet implemented"))
+    let re = RegexBuilder::new("mul\\((\\d{1,3}),(\\d{1,3})\\)").build()?;
+
+    let c = re.captures_iter(input).collect_vec();
+    // it is ok to unwrap the parse result here, because the regex only returns valid digits in the capture group
+    let result = re
+        .captures_iter(input)
+        .map(|x| x.extract())
+        .map(|(_, [a, b])| (a.parse().unwrap(), b.parse().unwrap()))
+        .map(|(a, b): (usize, usize)| a * b)
+        .sum();
+
+    Ok(result)
 }
 fn solve_2(input: &str) -> Result<usize> {
     Err(eyre!("not yet implemented"))
@@ -24,8 +36,8 @@ fn solve_2(input: &str) -> Result<usize> {
 mod tests {
     use super::*;
     use assert_ok::assert_ok;
-    const INPUT: &str = "";
-    const SOLUTION_1: usize = 0;
+    const INPUT: &str = "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
+    const SOLUTION_1: usize = 161;
     const SOLUTION_2: usize = 0;
 
     #[test]
