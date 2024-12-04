@@ -7,7 +7,7 @@ pub struct Day;
 
 impl Solver for Day {
     fn part_1(&self, input: &str) -> Result<String> {
-        Ok(solve_1(input)?.to_string())
+        Ok(solve_1_nom(input)?.to_string())
     }
 
     fn part_2(&self, input: &str) -> Result<String> {
@@ -31,7 +31,7 @@ fn solve_1(input: &str) -> Result<i64> {
 }
 
 fn solve_1_nom(input: &str) -> Result<i64> {
-    let (_, r) = parse_all_mult(input)?;
+    let (_, r) = parse_all_mult(input).map_err(|e| eyre!("failed to parse {e:?}"))?;
     Ok(r.iter().map(|(a, b)| a * b).sum())
 }
 
@@ -45,7 +45,7 @@ enum Operation {
 mod parser {
     use nom::{
         self,
-        bytes::complete::{tag, take},
+        bytes::complete::{tag, take, take_till},
         character::complete::digit1,
         combinator::{map, map_res, not},
         error::ParseError,
@@ -92,7 +92,7 @@ mod parser {
     }
 }
 
-fn solve_2(input: &str) -> Result<usize> {
+fn solve_2(input: &str) -> Result<i64> {
     Err(eyre!("not yet implemented"))
 }
 
@@ -116,7 +116,9 @@ mod tests {
     #[test]
     fn test_1() {
         let r = assert_ok!(solve_1(INPUT));
+        let r_nom = assert_ok!(solve_1_nom(INPUT));
         assert_eq!(SOLUTION_1, r);
+        assert_eq!(SOLUTION_1, r_nom);
     }
     #[test]
     fn test_2() {
