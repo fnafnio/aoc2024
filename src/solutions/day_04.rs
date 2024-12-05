@@ -200,25 +200,25 @@ impl Board {
         true
     }
 
+    fn check_diag_mas(&self, start: Point2, dir: Direction) -> bool {
+        let d_last: Point2 = dir.opposite().into();
+        let dir: Point2 = dir.into();
+        if let (Some(first), Some(last)) = (self.get(&(dir + start)), self.get(&(d_last + start))) {
+            *first == 'M' && *last == 'S'
+        } else {
+            false
+        }
+    }
+
     fn check_cross_mas(&self, start: Point2) -> bool {
         use Direction::{DownBack, DownFront, UpBack, UpFront};
-        const CROSS: [(Direction, char); 4] = [
-            (UpBack, 'M'),
-            (UpFront, 'S'),
-            (DownBack, 'M'),
-            (DownFront, 'S'),
-        ];
+        const CROSS: [Direction; 4] = [UpBack, UpFront, DownBack, DownFront];
 
-        for (d, c_mas) in CROSS.iter() {
-            let p = (*d).into();
-            if let Some(c) = self.get(&p) {
-                if *c != *c_mas {
-                    return false;
-                }
-            }
-        }
-
-        true
+        CROSS
+            .iter()
+            .map(|&dir| self.check_diag_mas(start, dir))
+            .filter(|c| *c)
+            .count() == 2
     }
 }
 
@@ -254,13 +254,13 @@ S.S.S.S.S.
 M.M.M.M.M.
 ..........";
 
-    const SOLUTION_1A: usize = 6;
+    const SOLUTION_1A: usize = 4;
     const SOLUTION_1B: usize = 18;
     const SOLUTION_2: usize = 9;
 
     #[test]
     fn test_build_1() {
-        let b = dbg!(Board::new(INPUT_1A));
+        let b = Board::new(INPUT_1A);
         let v = b.find_all_char('X');
         assert_eq!(
             v,
@@ -285,11 +285,12 @@ M.M.M.M.M.
 
     #[test]
     fn test_1() {
-        let r = assert_ok!(solve_1(INPUT_1A));
-        assert_eq!(SOLUTION_1A, r);
         let r = assert_ok!(solve_1(INPUT_1B));
         assert_eq!(SOLUTION_1B, r);
+        let r = assert_ok!(solve_1(INPUT_1A));
+        assert_eq!(SOLUTION_1A, r);
     }
+
     #[test]
     fn test_2() {
         let r = assert_ok!(solve_2(INPUT_2));
