@@ -21,16 +21,22 @@ impl Solver for Day {
 fn solve_1(input: &str) -> Result<usize> {
     let b = Board::new(input);
 
-    Ok(b.find_all_x()
+    Ok(b.find_all_char('X')
         .into_iter()
         .map(|start| Direction::iterator().map(move |d| (start, d)))
         .flatten()
-        .map(|(start, dir)| b.go_direction(start, dir))
+        .map(|(start, dir)| b.check_xmas(start, dir))
         .filter(|c| *c)
         .count())
 }
 fn solve_2(input: &str) -> Result<usize> {
-    Err(eyre!("not yet implemented"))
+    let b = Board::new(input);
+
+    Ok(b.find_all_char('A')
+        .into_iter()
+        .map(|a| b.check_cross_mas(a))
+        .filter(|c| *c)
+        .count())
 }
 
 #[derive(Debug)]
@@ -52,10 +58,9 @@ enum Direction {
     DownFront,
 }
 
-impl Direction {
-    fn as_increment(&self, width: usize) -> Point2 {
-        let width = width as i32;
-        let (x, y): (i32, i32) = match self {
+impl From<Direction> for Point2 {
+    fn from(value: Direction) -> Self {
+        let (x, y) = match value {
             Direction::Front => (1, 0),
             Direction::UpFront => (1, -1),
             Direction::Up => (0, -1),
@@ -67,20 +72,28 @@ impl Direction {
         };
         Point2 { x, y }
     }
+}
 
+impl Direction {
     fn iterator() -> impl Iterator<Item = Direction> {
-        [
-            Direction::Front,
-            Direction::UpFront,
-            Direction::Up,
-            Direction::UpBack,
-            Direction::Back,
-            Direction::DownBack,
-            Direction::Down,
-            Direction::DownFront,
-        ]
-        .iter()
-        .cloned()
+        use Direction::*;
+        [Front, UpFront, Up, UpBack, Back, DownBack, Down, DownFront]
+            .iter()
+            .cloned()
+    }
+
+    fn opposite(&self) -> Direction {
+        use Direction::*;
+        match self {
+            Front => Back,
+            UpFront => DownBack,
+            Up => Down,
+            UpBack => DownFront,
+            Back => Front,
+            DownBack => UpFront,
+            Down => Up,
+            DownFront => UpBack,
+        }
     }
 }
 
@@ -124,6 +137,8 @@ impl Mul<i32> for Point2 {
 }
 
 const XMAS: &str = "XMAS";
+const MAS: &str = "MAS";
+
 impl Board {
     fn new(board: &str) -> Self {
         let width = board.lines().next().unwrap().len();
@@ -149,25 +164,28 @@ impl Board {
         None
     }
 
-    fn find_all_x(&self) -> Vec<Point2> {
+    fn find_all_char(&self, target: char) -> Vec<Point2> {
         self.board
             .iter()
             .enumerate()
             .map(|(i, l)| {
-                l.iter().enumerate().filter_map(move |(j, c)| match *c {
-                    'X' => Some(Point2 {
-                        y: i as i32,
-                        x: j as i32,
-                    }),
-                    _ => None,
+                l.iter().enumerate().filter_map(move |(j, c)| {
+                    if target == *c {
+                        Some(Point2 {
+                            y: i as i32,
+                            x: j as i32,
+                        })
+                    } else {
+                        None
+                    }
                 })
             })
             .flatten()
             .collect()
     }
 
-    fn go_direction(&self, start: Point2, dir: Direction) -> bool {
-        let incr = dir.as_increment(self.width);
+    fn check_xmas(&self, start: Point2, dir: Direction) -> bool {
+        let incr: Point2 = dir.into();
 
         for (i, xchar) in XMAS.char_indices() {
             let next = start + (incr * i as i32);
@@ -181,19 +199,40 @@ impl Board {
         }
         true
     }
+
+    fn check_cross_mas(&self, start: Point2) -> bool {
+        use Direction::{DownBack, DownFront, UpBack, UpFront};
+        const CROSS: [(Direction, char); 4] = [
+            (UpBack, 'M'),
+            (UpFront, 'S'),
+            (DownBack, 'M'),
+            (DownFront, 'S'),
+        ];
+
+        for (d, c_mas) in CROSS.iter() {
+            let p = (*d).into();
+            if let Some(c) = self.get(&p) {
+                if *c != *c_mas {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use assert_ok::assert_ok;
-    const INPUT_A: &str = "..X...
+    const INPUT_1A: &str = "..X...
 .SAMX.
 .A..A.
 XMAS.S
 .X....";
 
-    const INPUT_B: &str = "MMMSXXMASM
+    const INPUT_1B: &str = "MMMSXXMASM
 MSAMXMSMSA
 AMXSXMAAMM
 MSAMASMSMX
@@ -204,14 +243,25 @@ SAXAMASAAA
 MAMMMXMMMM
 MXMXAXMASX";
 
+    const INPUT_2: &str = ".M.S......
+..A..MSMS.
+.M.S.MAA..
+..A.ASMSM.
+.M.S.M....
+..........
+S.S.S.S.S.
+.A.A.A.A..
+M.M.M.M.M.
+..........";
+
     const SOLUTION_1A: usize = 6;
     const SOLUTION_1B: usize = 18;
-    const SOLUTION_2: usize = 0;
+    const SOLUTION_2: usize = 9;
 
     #[test]
     fn test_build_1() {
-        let b = dbg!(Board::new(INPUT_A));
-        let v = b.find_all_x();
+        let b = dbg!(Board::new(INPUT_1A));
+        let v = b.find_all_char('X');
         assert_eq!(
             v,
             vec![
@@ -223,26 +273,26 @@ MXMXAXMASX";
         );
         let f: Vec<_> = v
             .iter()
-            .map(|i| b.go_direction(*i, Direction::Front))
+            .map(|i| b.check_xmas(*i, Direction::Front))
             .collect();
         assert_eq!(f, vec![false, false, true, false]);
         let f: Vec<_> = v
             .iter()
-            .map(|i| b.go_direction(*i, Direction::Back))
+            .map(|i| b.check_xmas(*i, Direction::Back))
             .collect();
         assert_eq!(f, vec![false, true, false, false]);
     }
 
     #[test]
     fn test_1() {
-        let r = assert_ok!(solve_1(INPUT_A));
+        let r = assert_ok!(solve_1(INPUT_1A));
         assert_eq!(SOLUTION_1A, r);
-        let r = assert_ok!(solve_1(INPUT_B));
+        let r = assert_ok!(solve_1(INPUT_1B));
         assert_eq!(SOLUTION_1B, r);
     }
     #[test]
     fn test_2() {
-        let r = assert_ok!(solve_2(INPUT_A));
+        let r = assert_ok!(solve_2(INPUT_2));
         assert_eq!(SOLUTION_2, r);
     }
 }
