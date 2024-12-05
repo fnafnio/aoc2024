@@ -24,8 +24,10 @@ fn solve_2(input: &str) -> Result<usize> {
 mod tests {
     use super::*;
     use assert_ok::assert_ok;
-    const INPUT: &str = "";
-    const SOLUTION_1: usize = 0;
+    const INPUT: &str = "75,47,61,53,29
+97,61,53,29,13
+75,29,13";
+    const SOLUTION_1: usize = 143;
     const SOLUTION_2: usize = 0;
 
     #[test]
