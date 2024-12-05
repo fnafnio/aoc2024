@@ -103,12 +103,12 @@ impl Board {
         let incr = dir.as_increment(self.width);
 
         for (i, xchar) in XMAS.char_indices() {
-            let next = start as isize + i as isize * incr;
-            if next < 0 {
-                return false;
-            }
-            if let Some(c) = self.board.chars().nth(next as usize) {
-                if c != xchar {
+            if let Some(next) = start.checked_add_signed(incr * i as isize) {
+                if let Some(c) = self.board.chars().nth(next) {
+                    if c != xchar {
+                        return false;
+                    }
+                } else {
                     return false;
                 }
             } else {
