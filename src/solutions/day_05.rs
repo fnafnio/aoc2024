@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::Solver;
 use color_eyre::eyre::{eyre, Result};
+use rayon::{self, iter::ParallelIterator, str::ParallelString};
 
 pub struct Day;
 
@@ -21,13 +22,17 @@ fn solve_1(input: &str) -> Result<usize> {
         .ok_or(eyre!("cannot find empty line"))?;
     let rule_map = RuleMap::parse_rules(rules)?;
 
-    let mut valid = 0;
-    for update in updates.lines() {
-        let update = parse_update(update)?;
-        if rule_map.validate_update(&update) {
-            valid += update[update.len() / 2];
-        }
-    }
+    let valid = updates
+        .par_lines()
+        .map(|update| {
+            let update = parse_update(update).unwrap();
+            if rule_map.validate_update(&update) {
+                update[update.len() / 2]
+            } else {
+                0
+            }
+        })
+        .sum();
     Ok(valid)
 }
 fn solve_2(input: &str) -> Result<usize> {
