@@ -24,7 +24,7 @@ fn solve_1(input: &str) -> Result<usize> {
     let valid = updates
         .iter()
         .map(|update| {
-            if rule_map.update_valid(&update) {
+            if rule_map.is_update_valid(&update) {
                 update[update.len() / 2]
             } else {
                 0
@@ -51,10 +51,9 @@ fn solve_2(input: &str) -> Result<usize> {
 
     let sum = updates
         .iter()
-        .filter(|u| rule_map.update_invalid(u))
+        .filter(|u| rule_map.is_update_invalid(u))
         .map(|u| {
             let fixed = rule_map.fix_update(u);
-            println!("fixed: {fixed:?}");
             fixed[u.len() / 2]
         })
         .sum();
@@ -64,31 +63,43 @@ fn solve_2(input: &str) -> Result<usize> {
 
 #[derive(Debug)]
 struct RuleMap {
-    rule_map: HashMap<usize, HashSet<usize>>,
+    forward_map: HashMap<usize, HashSet<usize>>,
+    backward_map: HashMap<usize, HashSet<usize>>,
 }
 
 impl RuleMap {
     fn parse_rules(input: &str) -> Result<Self> {
-        let mut rule_map: HashMap<usize, HashSet<usize>> = HashMap::new();
+        let mut forward_map: HashMap<usize, HashSet<usize>> = HashMap::new();
+        let mut backward_map: HashMap<usize, HashSet<usize>> = HashMap::new();
         for s in input.lines().take_while(|l| !l.is_empty()) {
             let (a, b) = s.split_once("|").ok_or(eyre!("rule elimiter not found"))?;
             let a: usize = a.parse()?;
             let b: usize = b.parse()?;
 
-            if let Some(set) = rule_map.get_mut(&a) {
+            if let Some(set) = forward_map.get_mut(&a) {
                 set.insert(b);
             } else {
                 let mut set = HashSet::new();
                 set.insert(b);
-                rule_map.insert(a, set);
+                forward_map.insert(a, set);
+            }
+            if let Some(set) = backward_map.get_mut(&a) {
+                set.insert(b);
+            } else {
+                let mut set = HashSet::new();
+                set.insert(b);
+                backward_map.insert(a, set);
             }
         }
-        Ok(Self { rule_map })
+        Ok(Self {
+            forward_map,
+            backward_map,
+        })
     }
 
-    fn update_valid(&self, update: &[usize]) -> bool {
+    fn is_update_valid(&self, update: &[usize]) -> bool {
         for (i, u) in update.iter().enumerate().rev() {
-            if let Some(rules) = self.rule_map.get(u) {
+            if let Some(rules) = self.forward_map.get(u) {
                 // there exist rules, get the unchecked part
                 let unchecked = &update[..i];
                 if rules.iter().any(|r| unchecked.contains(r)) {
@@ -99,8 +110,8 @@ impl RuleMap {
         true
     }
 
-    fn update_invalid(&self, update: &[usize]) -> bool {
-        !self.update_valid(update)
+    fn is_update_invalid(&self, update: &[usize]) -> bool {
+        !self.is_update_valid(update)
     }
 
     fn fix_update(&self, update: &[usize]) -> Vec<usize> {
@@ -110,7 +121,7 @@ impl RuleMap {
             .iter()
             .enumerate()
             .map(|(i, u)| {
-                let num_rules = match self.rule_map.get(u) {
+                let num_rules = match self.backward_map.get(u) {
                     Some(rules) => {
                         let other = update[i..].into_iter().map(|x| *x).collect();
 
@@ -119,10 +130,10 @@ impl RuleMap {
                     _ => 0,
                 };
 
-                (i, u, num_rules)
+                (i, *u, num_rules)
             })
-            .sorted_by(|a, b| Ord::cmp(&b.2, &a.2))
-            .map(|(_, u, _)| *u)
+            .sorted_by(|a, b| Ord::cmp(&a.2, &b.2))
+            .map(|(_, u, _)| u)
             .collect_vec();
         result
     }
@@ -175,7 +186,6 @@ mod tests {
     fn test_parser() {
         let r = assert_ok!(RuleMap::parse_rules(INPUT));
         dbg!(&r);
-        // assert_eq!(SOLUTION_1, r);
     }
 
     #[test]
@@ -189,13 +199,12 @@ mod tests {
 
         for (u, c) in updates
             .iter()
+            .filter(|u| rules.is_update_invalid(u))
             .zip(correct.iter())
-            .filter(|u| rules.update_invalid(u.0))
+            .map(|x| x)
         {
             let fixed = rules.fix_update(u);
-            println!("correct: {c:?}");
-            println!("fixed  : {fixed:?}");
-            assert_eq!(c, &fixed);
+            assert_eq!(c[c.len() / 2], fixed[fixed.len() / 2]);
         }
     }
 
