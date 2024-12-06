@@ -24,7 +24,7 @@ fn solve_1(input: &str) -> Result<usize> {
     let valid = updates
         .iter()
         .map(|update| {
-            if rule_map.validate_update(&update) {
+            if rule_map.update_valid(&update) {
                 update[update.len() / 2]
             } else {
                 0
@@ -51,7 +51,7 @@ fn solve_2(input: &str) -> Result<usize> {
 
     updates
         .iter()
-        .filter(|u| !rule_map.validate_update(&u))
+        .filter(|u| rule_map.update_invalid(&u))
         .map(|u| {
             // now we have an invalid update to fix
         });
@@ -83,7 +83,7 @@ impl RuleMap {
         Ok(Self { rule_map })
     }
 
-    fn validate_update(&self, update: &[usize]) -> bool {
+    fn update_valid(&self, update: &[usize]) -> bool {
         for (i, u) in update.iter().enumerate().rev() {
             if let Some(rules) = self.rule_map.get(u) {
                 // there exist rules, get the unchecked part
@@ -94,6 +94,10 @@ impl RuleMap {
             }
         }
         true
+    }
+
+    fn update_invalid(&self, update: &[usize]) -> bool {
+        !self.update_valid(update)
     }
 
     fn fix_update(&self, update: &[usize]) -> Result<Vec<usize>> {
@@ -110,7 +114,7 @@ impl RuleMap {
                 let other = update[i..].into_iter().map(|x| *x).collect();
 
                 let num_rules = rules.intersection(&other).count();
-                // rules.iter().inter
+
                 Ok((i, u, num_rules))
             })
             .collect::<Result<Vec<_>>>()?
@@ -174,7 +178,14 @@ mod tests {
 
     #[test]
     fn test_fix_update() {
-        let r = assert_ok!(RuleMap::parse_rules(INPUT));
+        let (updates, rules) = assert_ok!(parse_input(INPUT));
+
+        for u in updates.iter().filter(|u| rules.update_invalid(u)) {
+            if let Ok(fixed) = rules.fix_update(u) {
+                println!("from {u:?}");
+                println!("to   {fixed:?}");
+            }
+        }
     }
 
     #[test]
