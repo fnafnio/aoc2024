@@ -49,14 +49,17 @@ fn parse_input(input: &str) -> Result<(Vec<Vec<usize>>, RuleMap)> {
 fn solve_2(input: &str) -> Result<usize> {
     let (updates, rule_map) = parse_input(input)?;
 
-    updates
+    let sum = updates
         .iter()
-        .filter(|u| rule_map.update_invalid(&u))
+        .filter(|u| rule_map.update_invalid(u))
         .map(|u| {
-            // now we have an invalid update to fix
-        });
+            let fixed = rule_map.fix_update(u);
+            println!("fixed: {fixed:?}");
+            fixed[u.len() / 2]
+        })
+        .sum();
 
-    Err(eyre!("not yet implemented"))
+    Ok(sum)
 }
 
 #[derive(Debug)]
@@ -100,29 +103,28 @@ impl RuleMap {
         !self.update_valid(update)
     }
 
-    fn fix_update(&self, update: &[usize]) -> Result<Vec<usize>> {
+    fn fix_update(&self, update: &[usize]) -> Vec<usize> {
         // sort by the count of rules applying for a number
 
         let result = update
             .iter()
             .enumerate()
             .map(|(i, u)| {
-                let rules = self
-                    .rule_map
-                    .get(u)
-                    .ok_or(eyre!("no rules for {u} found"))?;
-                let other = update[i..].into_iter().map(|x| *x).collect();
+                let num_rules = match self.rule_map.get(u) {
+                    Some(rules) => {
+                        let other = update[i..].into_iter().map(|x| *x).collect();
 
-                let num_rules = rules.intersection(&other).count();
+                        rules.intersection(&other).count()
+                    }
+                    _ => 0,
+                };
 
-                Ok((i, u, num_rules))
+                (i, u, num_rules)
             })
-            .collect::<Result<Vec<_>>>()?
-            .into_iter()
-            .sorted_by(|a, b| Ord::cmp(&a.2, &b.2))
+            .sorted_by(|a, b| Ord::cmp(&b.2, &a.2))
             .map(|(_, u, _)| *u)
             .collect_vec();
-        Ok(result)
+        result
     }
 }
 
@@ -167,7 +169,7 @@ mod tests {
 61,13,29
 97,13,75,29,47";
     const SOLUTION_1: usize = 143;
-    const SOLUTION_2: usize = 0;
+    const SOLUTION_2: usize = 123;
 
     #[test]
     fn test_parser() {
@@ -178,13 +180,22 @@ mod tests {
 
     #[test]
     fn test_fix_update() {
+        let correct = vec![
+            vec![97, 75, 47, 61, 53],
+            vec![61, 29, 13],
+            vec![97, 75, 47, 29, 13],
+        ];
         let (updates, rules) = assert_ok!(parse_input(INPUT));
 
-        for u in updates.iter().filter(|u| rules.update_invalid(u)) {
-            if let Ok(fixed) = rules.fix_update(u) {
-                println!("from {u:?}");
-                println!("to   {fixed:?}");
-            }
+        for (u, c) in updates
+            .iter()
+            .zip(correct.iter())
+            .filter(|u| rules.update_invalid(u.0))
+        {
+            let fixed = rules.fix_update(u);
+            println!("correct: {c:?}");
+            println!("fixed  : {fixed:?}");
+            assert_eq!(c, &fixed);
         }
     }
 
